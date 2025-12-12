@@ -1,0 +1,115 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserType {
+  ADMIN
+  ENDUSER
+  DRONE
+}
+
+enum DroneStatus {
+  AVAILABLE
+  BUSY
+  BROKEN
+  MAINTENANCE
+}
+
+enum OrderStatus {
+  PENDING
+  ASSIGNED
+  PICKED_UP
+  IN_TRANSIT
+  DELIVERED
+  FAILED
+  WITHDRAWN
+  HANDOFF_PENDING
+}
+
+enum HandoffStatus {
+  PENDING
+  ASSIGNED
+  COMPLETED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  userType  UserType
+  password  String   @default("") // For drones, this can be empty or hashed ID
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  orders Order[]
+}
+
+model Drone {
+  id              String     @id @default(cuid())
+  name            String     @unique
+  status          DroneStatus @default(AVAILABLE)
+  currentLat      Float?
+  currentLng      Float?
+  batteryLevel    Int        @default(100)
+  lastHeartbeat   DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  
+  // Remove currentOrderId since it causes issues with one-to-one
+  // We'll track current order through the Order model's droneId instead
+  orders         Order[]    @relation("DroneOrders")
+  brokenHandoffs HandoffRequest[] @relation("BrokenDrone")
+  rescueHandoffs HandoffRequest[] @relation("RescueDrone")
+}
+
+model Order {
+  id                String     @id @default(cuid())
+  userId            String
+  droneId           String?    @unique  // Add unique to make it one-to-one for current order
+  originLat         Float
+  originLng         Float
+  destLat           Float
+  destLng           Float
+  status            OrderStatus @default(PENDING)
+  weight            Float     @default(1.0)
+  currentLat        Float?
+  currentLng        Float?
+  estimatedDelivery DateTime?
+  createdAt         DateTime   @default(now())
+  pickedUpAt        DateTime?
+  deliveredAt       DateTime?
+  updatedAt         DateTime   @updatedAt
+  
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  drone       Drone?         @relation("DroneOrders", fields: [droneId], references: [id], onDelete: SetNull)
+  handoffRequests HandoffRequest[]
+  
+  @@index([userId])
+  @@index([droneId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model HandoffRequest {
+  id            String       @id @default(cuid())
+  brokenDroneId String
+  rescueDroneId String?
+  orderId       String
+  locationLat   Float
+  locationLng   Float
+  status        HandoffStatus @default(PENDING)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  
+  brokenDrone Drone @relation("BrokenDrone", fields: [brokenDroneId], references: [id], onDelete: Cascade)
+  rescueDrone Drone? @relation("RescueDrone", fields: [rescueDroneId], references: [id], onDelete: SetNull)
+  order       Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  @@index([brokenDroneId])
+  @@index([status])
+}
