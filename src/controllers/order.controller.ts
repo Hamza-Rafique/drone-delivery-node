@@ -1,0 +1,7 @@
+ORDER_CREATED: "Order submitted successfully."
+ORDER_FETCHED: "Orders retrieved successfully."
+ORDER_WITHDRAWN: "Order withdrawn successfully."
+ORDER_NOT_FOUND: "Order not found."
+ORDER_ALREADY_PICKED: "Order cannot be withdrawn because it has already been picked up."
+ORDER_NOT_AUTHORIZED: "You are not authorized to access this order."
+INVALID_ORDER_STATUS: "Invalid order status for this operation."

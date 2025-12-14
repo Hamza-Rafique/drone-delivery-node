@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { body, param } from 'express-validator';
 import { validateRequest } from '../middleware/validateRequest';
 import { authenticate, authorize } from '../middleware/auth.middleware';
-import { droneController } from '../controllers/drone.controller';
+import { droneController } from '../controllers/';
 
 const router = Router();
 

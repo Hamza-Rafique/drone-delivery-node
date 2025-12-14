@@ -1,0 +1,8 @@
+version: '3.8'
+services:
+  mongo-test:
+    image: mongo:6
+    ports:
+      - "27018:27017"
+    environment:
+      MONGO_INITDB_DATABASE: drone-delivery-test
