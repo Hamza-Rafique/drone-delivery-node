@@ -1,55 +1,32 @@
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import { connectDB } from "./config/database";
-import authRoutes from "./routes/auth.routes";
-import droneRoutes from "./routes/drone.routes";
+import express, { Application } from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
 
-dotenv.config();
+import { logger } from './middleware/logger';
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+const app: Application = express();
 
-// Middleware
-app.use(cors());
+/* ---------- GLOBAL MIDDLEWARE ---------- */
+
+// Custom logger (your own)
+app.use(logger);
+
+// Body parser
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// Routes
-app.use("/api/auth", authRoutes);
-app.use("/api/drones", droneRoutes);
-app.use("/api/orders", require("./routes/orders").default);
-app.use("/api/users", require("./routes/users").default);
+// CORS
+app.use(cors());
 
-// Health check
-app.get("/health", (req, res) => {
-  res.status(200).json({ status: "OK", timestamp: new Date().toISOString() });
-});
+// Security headers
+app.use(helmet());
 
-// 404 handler
-app.use("*", (req, res) => {
-  res.status(404).json({ error: "Route not found" });
-});
+// HTTP logger (morgan)
+app.use(morgan('dev'));
 
-// Start server
-const startServer = async (): Promise<void> => {
-  try {
-    await connectDB();
-
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-      console.log(`Environment: ${process.env.NODE_ENV}`);
-    });
-  } catch (error) {
-    console.error("Failed to start server:", error);
-    process.exit(1);
-  }
-};
-
-startServer();
-// Handle uncaught errors
-process.on("unhandledRejection", (error) => {
-  console.error("Unhandled Rejection:", error);
+/* ---------- ROUTES ---------- */
+app.get('/health', (_req, res) => {
+  res.json({ status: 'OK' });
 });
 
 export default app;
