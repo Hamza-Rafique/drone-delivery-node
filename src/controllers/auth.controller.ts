@@ -4,19 +4,17 @@ import { User } from '../models';
 import { generateToken } from '../config/jwt';
 import { logger } from '../utils/logger';
 import { AppError } from '../middleware/error.middleware';
-import { AuthenticatedRequest } from '../types';
+
 
 export const authenticate = async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, email, userType } = req.body;
 
-    // In a real application, you would verify credentials against a database
-    // For this assessment, we'll create/authenticate based on the provided data
     
     let user = await User.findOne({ email });
     
     if (!user) {
-      // Create a new user for the purpose of this assessment
+      
       const hashedPassword = await bcrypt.hash('defaultPassword123', 10);
       
       user = new User({

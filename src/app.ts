@@ -9,12 +9,14 @@ import authRoutes from './routes/auth.routes';
 import droneRoutes from './routes/drone.routes';
 import orderRoutes from './routes/order.routes';
 import adminRoutes from './routes/admin.routes';
-import userRoutes from './routes/user.routes.ts';
+import userRoutes from './routes/user.routes';
 
 // Import middleware
+
+
 import { errorHandler } from './middleware/error.middleware';
-import { logger } from './utils/logger';
-import { authenticateToken } from './middleware/auth.middleware';
+import { logger } from './middleware/logger';
+import { authenticateToken } from './middleware/authenticate';
 
 class App {
   public app: Application;
