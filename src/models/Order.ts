@@ -10,41 +10,63 @@ export type OrderStatus =
 export interface IOrder extends Document {
   createdBy: Types.ObjectId;
   origin: {
-    lat: number;
-    lng: number;
+    type: 'Point';
+    coordinates: [number, number]; // [lng, lat]
   };
   destination: {
-    lat: number;
-    lng: number;
+    type: 'Point';
+    coordinates: [number, number];
   };
   currentLocation?: {
-    lat: number;
-    lng: number;
+    type: 'Point';
+    coordinates: [number, number];
   };
   status: OrderStatus;
   assignedDrone?: Types.ObjectId | null;
-  notes?: string;
 }
+
+const GeoPoint = {
+  type: {
+    type: String,
+    enum: ['Point'],
+    required: true,
+  },
+  coordinates: {
+    type: [Number], // [lng, lat]
+    required: true,
+  },
+};
 
 const OrderSchema = new Schema<IOrder>(
   {
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    origin: { lat: Number, lng: Number },
-    destination: { lat: Number, lng: Number },
-    currentLocation: { lat: Number, lng: Number },
+
+    origin: GeoPoint,
+    destination: GeoPoint,
+    currentLocation: GeoPoint,
+
     status: {
       type: String,
       enum: ['SUBMITTED', 'RESERVED', 'PICKED', 'DELIVERED', 'FAILED'],
       default: 'SUBMITTED',
     },
+
     assignedDrone: {
       type: Schema.Types.ObjectId,
       ref: 'Drone',
       default: null,
     },
-    notes: String,
   },
   { timestamps: true }
 );
+
+// 📌 Geospatial indexes
+OrderSchema.index({ origin: '2dsphere' });
+OrderSchema.index({ destination: '2dsphere' });
+OrderSchema.index({ currentLocation: '2dsphere' });
+
+// 📌 Performance indexes
+OrderSchema.index({ status: 1 });
+OrderSchema.index({ createdBy: 1 });
 
 export default model<IOrder>('Order', OrderSchema);

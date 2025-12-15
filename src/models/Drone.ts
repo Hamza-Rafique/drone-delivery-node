@@ -6,35 +6,38 @@ export interface IDrone extends Document {
   userId: Types.ObjectId;
   status: DroneStatus;
   location: {
-    lat: number;
-    lng: number;
+    type: 'Point';
+    coordinates: [number, number];
   };
-  batteryLevel: number;
   currentOrder?: Types.ObjectId | null;
-  lastSeenAt?: Date;
 }
 
 const DroneSchema = new Schema<IDrone>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+
     status: {
       type: String,
       enum: ['IDLE', 'BUSY', 'BROKEN'],
       default: 'IDLE',
     },
+
     location: {
-      lat: Number,
-      lng: Number,
+      type: { type: String, enum: ['Point'], default: 'Point' },
+      coordinates: { type: [Number], default: [0, 0] },
     },
-    batteryLevel: { type: Number, default: 100 },
+
     currentOrder: {
       type: Schema.Types.ObjectId,
       ref: 'Order',
       default: null,
     },
-    lastSeenAt: Date,
   },
   { timestamps: true }
 );
+
+// 📌 Indexes
+DroneSchema.index({ location: '2dsphere' });
+DroneSchema.index({ status: 1 });
 
 export default model<IDrone>('Drone', DroneSchema);

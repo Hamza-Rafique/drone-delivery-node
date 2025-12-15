@@ -1,10 +1,10 @@
-import app from './app';
-import dotenv from 'dotenv';
+import { startServer } from './app';
+import mongoose from 'mongoose';
 
-dotenv.config();
+startServer();
 
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+process.on('SIGINT', async () => {
+  console.log('🛑 Shutting down...');
+  await mongoose.connection.close();
+  process.exit(0);
 });

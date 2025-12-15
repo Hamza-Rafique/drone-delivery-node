@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 
 import { logger } from './middleware/logger';
+import { connectDB } from './config/database';
 
 const app: Application = express();
 
@@ -23,6 +24,14 @@ app.use(helmet());
 
 // HTTP logger (morgan)
 app.use(morgan('dev'));
+
+export const startServer = async () => {
+  await connectDB();
+
+  app.listen(process.env.PORT || 3000, () => {
+    console.log('🚀 Server running');
+  });
+};
 
 /* ---------- ROUTES ---------- */
 app.get('/health', (_req, res) => {
