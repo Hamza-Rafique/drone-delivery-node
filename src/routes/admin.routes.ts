@@ -1,46 +1,43 @@
-import { Router } from "express";
-import { param, body } from "express-validator";
-import { authenticateToken } from "../middleware/authenticate";
-import { requireRole } from "../middleware/requireRole";
-import { validateRequest } from "../middleware/validateRequest";
-import { adminController } from "../controllers/admin.controller";
+import { Router } from 'express';
+import {
+  getOrders,
+  updateOrder,
+  getDrones,
+  updateDroneStatus
+} from '../controllers/admin.controller';
+import { requireRole } from '../middleware/auth.middleware';
 
 const router = Router();
 
-// Apply auth + role middleware to all admin routes
-router.use(authenticateToken, requireRole(["ADMIN"]));
+// All admin routes require admin role
+router.use(requireRole(['admin']));
 
 /**
- * Orders
+ * @route   GET /api/admin/orders
+ * @desc    Get multiple orders in bulk
+ * @access  Private (Admin only)
  */
-router.get("/orders", adminController.getAllOrders);
-
-router.put(
-  "/orders/:id",
-  [
-    param("id").isMongoId(),
-    body("origin.lat").optional().isFloat({ min: -90, max: 90 }),
-    body("origin.lng").optional().isFloat({ min: -180, max: 180 }),
-    body("destination.lat").optional().isFloat({ min: -90, max: 90 }),
-    body("destination.lng").optional().isFloat({ min: -180, max: 180 }),
-  ],
-  validateRequest,
-  adminController.updateOrder
-);
+router.get('/orders', getOrders);
 
 /**
- * Drones
+ * @route   PUT /api/admin/orders/:orderId
+ * @desc    Change order origin or destination
+ * @access  Private (Admin only)
  */
-router.get("/drones", adminController.getDrones);
+router.put('/orders/:orderId', updateOrder);
 
-router.put(
-  "/drones/:id/status",
-  [
-    param("id").isMongoId(),
-    body("status").isIn(["IDLE", "BUSY", "BROKEN"]),
-  ],
-  validateRequest,
-  adminController.updateDroneStatus
-);
+/**
+ * @route   GET /api/admin/drones
+ * @desc    Get list of all drones
+ * @access  Private (Admin only)
+ */
+router.get('/drones', getDrones);
+
+/**
+ * @route   PUT /api/admin/drones/:droneId/status
+ * @desc    Mark drone as broken or fixed
+ * @access  Private (Admin only)
+ */
+router.put('/drones/:droneId/status', updateDroneStatus);
 
 export default router;

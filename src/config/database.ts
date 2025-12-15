@@ -1,24 +1,28 @@
 import mongoose from 'mongoose';
+import { logger } from '../middleware/logger';
 
-export const connectDB = async () => {
+
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/drone_delivery';
+
+export const connectDB = async (): Promise<void> => {
   try {
-    await mongoose.connect(process.env.MONGO_URI!, {
-      maxPoolSize: 10,      // Connection pooling
-      serverSelectionTimeoutMS: 5000,
-    });
-
-    console.log('✅ MongoDB connected');
-
-    mongoose.connection.on('error', (err) => {
-      console.error('❌ MongoDB runtime error:', err);
-    });
-
-    mongoose.connection.on('disconnected', () => {
-      console.warn('⚠️ MongoDB disconnected');
-    });
-
+    const conn = await mongoose.connect(MONGODB_URI);
+    logger.info(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
-    console.error('❌ MongoDB connection failed:', error);
-    process.exit(1); // fail fast
+    logger.error('MongoDB connection error:', error);
+    process.exit(1);
   }
 };
+
+// Handle MongoDB connection events
+mongoose.connection.on('connected', () => {
+  logger.info('Mongoose connected to MongoDB');
+});
+
+mongoose.connection.on('error', (err) => {
+  logger.error('Mongoose connection error:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+  logger.warn('Mongoose disconnected from MongoDB');
+});

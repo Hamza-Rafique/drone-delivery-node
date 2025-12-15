@@ -1,24 +1,22 @@
 import { Router } from 'express';
-import { body } from 'express-validator';
-import { authController } from '../controllers/auth.controller';
-import { validateRequest } from '../middleware/validateRequest';
+import { authenticate, register } from '../controllers/auth.controller';
+import { validateRequest } from '../middleware/validation.middleware';
+import { authSchema } from '../middleware/validation.middleware';
 
 const router = Router();
 
-router.post(
-  '/login',
-  [
-    body('name')
-      .isString()
-      .trim()
-      .notEmpty()
-      .escape(),
+/**
+ * @route   POST /api/auth/login
+ * @desc    Authenticate user and get JWT token
+ * @access  Public
+ */
+router.post('/login', validateRequest(authSchema), authenticate);
 
-    body('role')
-      .isIn(['ADMIN', 'ENDUSER', 'DRONE']),
-  ],
-  validateRequest,
-  authController.login
-);
+/**
+ * @route   POST /api/auth/register
+ * @desc    Register a new user (for testing purposes)
+ * @access  Public
+ */
+router.post('/register', validateRequest(authSchema), register);
 
 export default router;
