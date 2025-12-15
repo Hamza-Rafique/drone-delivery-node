@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import Order from '../models/Order';
+import { Order } from '../models/Order';
 import Drone from '../models/Drone';
 
 export const adminController = {

@@ -1,152 +1,101 @@
 import { Request, Response } from 'express';
-import Order from '../models/Order';
-import Drone from '../models/Drone';
+import { Order, IOrder } from '../models/Order';
 
-export const droneController = {
+
+/**
+ * Order Controller handles user order endpoints:
+ * - Create order
+ * - Get order by ID
+ * - Withdraw order
+ * - Get user orders
+ */
+export const orderController = {
   /**
-   * Reserve a job (first available order)
+   * Create a new order
    */
-  async reserveJob(req: Request, res: Response) {
-    const droneId = req.user!.userId;
+  async createOrder(req: Request, res: Response) {
+    try {
+      const userId = req.user!.id; // Injected by auth middleware
+      const { origin, destination } = req.body;
 
-    const drone = await Drone.findOne({ userId: droneId });
-    if (!drone || drone.status !== 'IDLE') {
-      return res.status(400).json({ message: 'Drone not available' });
-    }
-
-    const order = await Order.findOne({
-      status: 'SUBMITTED',
-      assignedDrone: null,
-    });
-
-    if (!order) {
-      return res.status(404).json({ message: 'No jobs available' });
-    }
-
-    order.status = 'RESERVED';
-    order.assignedDrone = drone._id;
-
-    drone.status = 'BUSY';
-    drone.currentOrder = order._id;
-
-    await Promise.all([order.save(), drone.save()]);
-
-    res.json({ message: 'Job reserved', data: order });
-  },
-
-  /**
-   * Deliver order
-   */
-  async deliverOrder(req: Request, res: Response) {
-    const droneId = req.user!.userId;
-    const order = await Order.findById(req.params.id);
-
-    if (!order || order.status !== 'PICKED') {
-      return res.status(400).json({ message: 'Invalid order state' });
-    }
-
-    order.status = 'DELIVERED';
-    order.assignedDrone = null;
-    await order.save();
-
-    await Drone.updateOne(
-      { userId: droneId },
-      { status: 'IDLE', currentOrder: null }
-    );
-
-    res.json({ message: 'Order delivered' });
-  },
-
-  /**
-   * Fail order
-   */
-  async failOrder(req: Request, res: Response) {
-    const droneId = req.user!.userId;
-    const order = await Order.findById(req.params.id);
-
-    if (!order) {
-      return res.status(404).json({ message: 'Order not found' });
-    }
-
-    order.status = 'FAILED';
-    order.assignedDrone = null;
-    await order.save();
-
-    await Drone.updateOne(
-      { userId: droneId },
-      { status: 'IDLE', currentOrder: null }
-    );
-
-    res.json({ message: 'Order marked as failed' });
-  },
-
-  /**
-   * Mark drone as broken
-   */
-  async markBroken(req: Request, res: Response) {
-    const drone = await Drone.findOne({ userId: req.user!.userId });
-
-    if (!drone) {
-      return res.status(404).json({ message: 'Drone not found' });
-    }
-
-    if (drone.currentOrder) {
-      await Order.findByIdAndUpdate(drone.currentOrder, {
+      const order = new Order({
+        user: userId,
+        origin,
+        destination,
         status: 'SUBMITTED',
-        assignedDrone: null,
+        timeline: [{ status: 'SUBMITTED', timestamp: new Date() }],
       });
+
+      await order.save();
+
+      res.status(201).json({
+        message: 'Order created successfully',
+        data: order,
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Internal server error' });
     }
-
-    drone.status = 'BROKEN';
-    drone.currentOrder = null;
-    await drone.save();
-
-    res.json({ message: 'Drone marked as broken' });
   },
 
   /**
-   * Update drone location
+   * Get order by ID
    */
-  async updateLocation(req: Request, res: Response) {
-    const { lat, lng } = req.body;
+  async getOrderById(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const order = await Order.findById(id).populate('user');
 
-    await Drone.updateOne(
-      { userId: req.user!.userId },
-      {
-        location: {
-          type: 'Point',
-          coordinates: [lng, lat],
-        },
+      if (!order) {
+        return res.status(404).json({ message: 'Order not found' });
       }
-    );
 
-    res.json({ message: 'Location updated' });
-  },
-
-  /**
-   * Heartbeat
-   */
-  async heartbeat(req: Request, res: Response) {
-    const drone = await Drone.findOne({ userId: req.user!.userId });
-
-    res.json({
-      status: drone?.status,
-      currentOrder: drone?.currentOrder,
-    });
-  },
-
-  /**
-   * Get current order
-   */
-  async getCurrentOrder(req: Request, res: Response) {
-    const drone = await Drone.findOne({ userId: req.user!.userId }).populate(
-      'currentOrder'
-    );
-
-    if (!drone?.currentOrder) {
-      return res.status(404).json({ message: 'No active order' });
+      res.json({ data: order });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Internal server error' });
     }
+  },
 
-    res.json({ data: drone.currentOrder });
+  /**
+   * Withdraw an order (if not picked)
+   */
+  async withdrawOrder(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const userId = req.user!.id;
+
+      const order = await Order.findOne({ _id: id, user: userId });
+
+      if (!order) {
+        return res.status(404).json({ message: 'Order not found' });
+      }
+
+      if (order.status !== 'SUBMITTED') {
+        return res.status(400).json({ message: 'Cannot withdraw, already picked' });
+      }
+
+      await Order.deleteOne({ _id: id });
+
+      res.json({ message: 'Order withdrawn successfully' });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  },
+
+  /**
+   * Get all orders of the logged-in user
+   */
+  async getUserOrders(req: Request, res: Response) {
+    try {
+      const userId = req.user!.id;
+      const orders = await Order.find({ user: userId }).sort({ createdAt: -1 });
+
+      res.json({ data: orders });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Internal server error' });
+    }
   },
 };

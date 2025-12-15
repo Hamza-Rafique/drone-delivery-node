@@ -1,19 +1,27 @@
 import { Router } from 'express';
 
-import { authenticateToken } from '../middleware/authenticate';
-import { requireRole } from '../middleware/requireRole';
-import { droneController } from '../controllers/order.controller';
+import { validateRequest } from '../middleware/validateRequest';
+import { body, param } from 'express-validator';
+import { orderController } from '../controllers/order.controller';
 
 const router = Router();
 
-router.use(authenticateToken, requireRole(['DRONE']));
+router.post(
+  '/',
+  [
+    body('origin.lat').isFloat({ min: -90, max: 90 }),
+    body('origin.lng').isFloat({ min: -180, max: 180 }),
+    body('destination.lat').isFloat({ min: -90, max: 90 }),
+    body('destination.lng').isFloat({ min: -180, max: 180 }),
+  ],
+  validateRequest,
+  orderController.createOrder
+);
 
-router.post('/jobs/reserve', droneController.reserveJob);
-router.put('/orders/:id/deliver', droneController.deliverOrder);
-router.put('/orders/:id/fail', droneController.failOrder);
-router.put('/status/broken', droneController.markBroken);
-router.put('/location', droneController.updateLocation);
-router.get('/heartbeat', droneController.heartbeat);
-router.get('/current-order', droneController.getCurrentOrder);
+router.get('/:id', [param('id').isMongoId()], validateRequest, orderController.getOrderById);
+
+router.delete('/:id', [param('id').isMongoId()], validateRequest, orderController.withdrawOrder);
+
+router.get('/users/me/orders', orderController.getUserOrders);
 
 export default router;

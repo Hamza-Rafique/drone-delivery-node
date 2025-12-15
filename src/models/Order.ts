@@ -1,72 +1,47 @@
 import { Schema, model, Document, Types } from 'mongoose';
 
-export type OrderStatus =
-  | 'SUBMITTED'
-  | 'RESERVED'
-  | 'PICKED'
-  | 'DELIVERED'
-  | 'FAILED';
-
+// Interface for TypeScript
 export interface IOrder extends Document {
-  createdBy: Types.ObjectId;
-  origin: {
-    type: 'Point';
-    coordinates: [number, number]; // [lng, lat]
-  };
-  destination: {
-    type: 'Point';
-    coordinates: [number, number];
-  };
-  currentLocation?: {
-    type: 'Point';
-    coordinates: [number, number];
-  };
-  status: OrderStatus;
+  user: Types.ObjectId;
+  origin: { lat: number; lng: number };
+  destination: { lat: number; lng: number };
+  status: 'SUBMITTED' | 'RESERVED' | 'PICKED' | 'DELIVERED' | 'FAILED';
   assignedDrone?: Types.ObjectId | null;
+  timeline: { status: string; timestamp: Date }[];
+  currentLocation?: { lat: number; lng: number };
+  notes?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-const GeoPoint = {
-  type: {
-    type: String,
-    enum: ['Point'],
-    required: true,
-  },
-  coordinates: {
-    type: [Number], // [lng, lat]
-    required: true,
-  },
-};
-
-const OrderSchema = new Schema<IOrder>(
+// Mongoose schema
+const orderSchema = new Schema<IOrder>(
   {
-    createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-
-    origin: GeoPoint,
-    destination: GeoPoint,
-    currentLocation: GeoPoint,
-
-    status: {
-      type: String,
-      enum: ['SUBMITTED', 'RESERVED', 'PICKED', 'DELIVERED', 'FAILED'],
-      default: 'SUBMITTED',
+    user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    origin: {
+      lat: { type: Number, required: true },
+      lng: { type: Number, required: true },
     },
-
-    assignedDrone: {
-      type: Schema.Types.ObjectId,
-      ref: 'Drone',
-      default: null,
+    destination: {
+      lat: { type: Number, required: true },
+      lng: { type: Number, required: true },
     },
+    status: { type: String, required: true, default: 'SUBMITTED' },
+    assignedDrone: { type: Schema.Types.ObjectId, ref: 'Drone', default: null },
+    timeline: [
+      {
+        status: String,
+        timestamp: { type: Date, default: Date.now },
+      },
+    ],
+    currentLocation: {
+      lat: Number,
+      lng: Number,
+    },
+    notes: { type: String, default: null },
   },
   { timestamps: true }
 );
 
-// 📌 Geospatial indexes
-OrderSchema.index({ origin: '2dsphere' });
-OrderSchema.index({ destination: '2dsphere' });
-OrderSchema.index({ currentLocation: '2dsphere' });
-
-// 📌 Performance indexes
-OrderSchema.index({ status: 1 });
-OrderSchema.index({ createdBy: 1 });
-
-export default model<IOrder>('Order', OrderSchema);
+// Export the model
+export const Order = model<IOrder>('Order', orderSchema);
