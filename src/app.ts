@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { connectDB } from "./config/database";
 import authRoutes from "./routes/auth.routes";
+import droneRoutes from "./routes/drone.routes";
 
 dotenv.config();
 
@@ -16,6 +17,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/drones", droneRoutes);
+app.use("/api/orders", require("./routes/orders").default);
+app.use("/api/users", require("./routes/users").default);
 
 // Health check
 app.get("/health", (req, res) => {

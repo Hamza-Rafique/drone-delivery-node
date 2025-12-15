@@ -2,14 +2,15 @@ import { Router } from 'express';
 import { body, param } from 'express-validator';
 import { validateRequest } from '../middleware/validateRequest';
 import { authenticate, authorize } from '../middleware/auth.middleware';
-import { droneController } from '../controllers/';
+import { droneController } from '../controllers/drone.controller';
+
 
 const router = Router();
 
-// All drone routes require authentication and drone user type
+
 router.use(authenticate, authorize('DRONE'));
 
-// Reserve a job
+
 router.post(
   '/reserve-job',
   droneController.reserveJob

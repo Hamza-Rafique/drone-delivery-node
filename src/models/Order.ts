@@ -1,11 +1,12 @@
-import { Schema, model, Document, Types } from 'mongoose';
+import { Schema, model, Document, Types } from "mongoose";
 
 export type OrderStatus =
-  | 'SUBMITTED'
-  | 'RESERVED'
-  | 'PICKED'
-  | 'DELIVERED'
-  | 'FAILED';
+  | "SUBMITTED"
+  | "RESERVED"
+  | "PICKED"
+  | "DELIVERED"
+  | "FAILED"
+  | "PENDING";
 
 export interface IOrder extends Document {
   origin: {
@@ -44,13 +45,13 @@ const OrderSchema = new Schema<IOrder>(
     },
     status: {
       type: String,
-      enum: ['SUBMITTED', 'RESERVED', 'PICKED', 'DELIVERED', 'FAILED'],
-      default: 'SUBMITTED',
+      enum: ["SUBMITTED", "RESERVED", "PICKED", "DELIVERED", "FAILED"],
+      default: "SUBMITTED",
       index: true,
     },
     assignedDrone: {
       type: Schema.Types.ObjectId,
-      ref: 'Drone',
+      ref: "Drone",
       default: null,
     },
     notes: {
@@ -59,7 +60,7 @@ const OrderSchema = new Schema<IOrder>(
     },
     createdBy: {
       type: Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       required: true,
     },
   },
@@ -68,4 +69,4 @@ const OrderSchema = new Schema<IOrder>(
   }
 );
 
-export const Order = model<IOrder>('Order', OrderSchema);
+export const Order = model<IOrder>("Order", OrderSchema);

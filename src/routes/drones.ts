@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import Drone from '../models/Drone';
-import Order from '../models/Order';
+import {Drone} from '../models/Drone';
+import{ Order, OrderStatus} from '../models/Order';
 import { authMiddleware, roleMiddleware, AuthRequest } from '../middleware/auth';
 
 const router = Router();
@@ -24,7 +24,7 @@ router.post('/status', async (req: AuthRequest, res) => {
   drone.status = status;
   if (status === 'broken' && drone.currentOrder) {
     const order = await Order.findById(drone.currentOrder);
-    order!.status = 'pending';
+    order!.status = 'pending' as OrderStatus;
     order!.assignedDrone = null;
     await order!.save();
     drone.currentOrder = null;

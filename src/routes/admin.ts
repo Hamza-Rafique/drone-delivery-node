@@ -1,10 +1,11 @@
 import { Router } from 'express';
-import { authMiddleware, roleMiddleware, AuthRequest } from '../middleware/auth.middleware';
-import Order from '../models/Order';
-import Drone from '../models/Drone';
+import { Order } from '../models/Order';
+import { Drone } from '../models/Drone';
+import { authenticate } from '../middleware/auth.middleware';
+import { AuthRequest, roleMiddleware } from '../middleware/auth';
 
 const router = Router();
-router.use(authMiddleware, roleMiddleware(['admin']));
+router.use(authenticate, roleMiddleware(['admin']));
 
 // List drones
 router.get('/drones', async (_, res) => {
@@ -22,13 +23,13 @@ router.post('/drones/:id/status', async (req: AuthRequest, res) => {
   res.json(drone);
 });
 
-// Bulk get orders
+
 router.get('/orders', async (_, res) => {
   const orders = await Order.find().populate('assignedDrone');
   res.json(orders);
 });
 
-// Change order origin/destination
+
 router.put('/orders/:id', async (req, res) => {
   const { origin, destination } = req.body;
   const order = await Order.findById(req.params.id);

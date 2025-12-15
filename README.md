@@ -33,5 +33,6 @@ A scalable backend system for managing drone deliveries with real-time tracking.
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/drone-delivery-nodejs.git
+git clone https://github.com/Hamza-Rafique/drone-delivery-nodejs.git
 cd drone-delivery-nodejs
+```

@@ -1,5 +1,6 @@
 import { Response, NextFunction } from 'express';
-import { AuthRequest } from './auth.middleware';
+import { AuthRequest } from './auth';
+
 
 export const authorize =
   (roles: Array<'admin' | 'enduser' | 'drone'>) =>
